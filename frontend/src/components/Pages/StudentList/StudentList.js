@@ -87,12 +87,29 @@ const StudentList = () => {
   const [studentData, setStudentData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState({});
-  const [sorts, setSorts] = useState([]);
+  //const [currentPage, setCurrentPage] = useState(1);
+  // const [search, setSearch] = useState("");
+  // const [filters, setFilters] = useState({});
+  // const [sorts, setSorts] = useState([]);
+
+  //change declaration of search filter and short
+  const [search, setSearch] = useState(() => {
+    return sessionStorage.getItem("studentList_search") || "";
+  });
+  const [filters, setFilters] = useState(() => {
+    const saved = sessionStorage.getItem("studentList_filters");
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [sorts, setSorts] = useState(() => {
+    const saved = sessionStorage.getItem("studentList_sorts");
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [currentPage, setCurrentPage] = useState(() => {
+    return Number(sessionStorage.getItem("studentList_page")) || 1;
+  });
+  //this is just try man
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [showAutoGraduate, setShowAutoGraduate] = useState(false);
@@ -218,6 +235,24 @@ const StudentList = () => {
     }
   }, [search, filters.search_name]);
 
+  //ini tambahan 
+  // ===================== PERSIST FILTERS TO SESSIONSTORAGE =====================
+  useEffect(() => {
+    sessionStorage.setItem("studentList_search", search);
+  }, [search]);
+
+  useEffect(() => {
+    sessionStorage.setItem("studentList_filters", JSON.stringify(filters));
+  }, [filters]);
+
+  useEffect(() => {
+    sessionStorage.setItem("studentList_sorts", JSON.stringify(sorts));
+  }, [sorts]);
+
+  useEffect(() => {
+    sessionStorage.setItem("studentList_page", String(currentPage));
+  }, [currentPage]);
+
   // ===================== HANDLERS =====================
   const handlePageChange = (page) => setCurrentPage(page);
 
@@ -277,13 +312,28 @@ const StudentList = () => {
             placeholder="Find name or student id"
           />
 
-          <ResetFilterButton
+          {/* <ResetFilterButton
             onClick={() => {
               setSearch("");
               setFilters({});
               setSorts([]);
             }}
+          /> */}
+
+          {/* tambahan untuk reset filter button */}
+          <ResetFilterButton
+            onClick={() => {
+              setSearch("");
+              setFilters({});
+              setSorts([]);
+              setCurrentPage(1);
+              sessionStorage.removeItem("studentList_search");
+              sessionStorage.removeItem("studentList_filters");
+              sessionStorage.removeItem("studentList_sorts");
+              sessionStorage.removeItem("studentList_page");
+            }}
           />
+
         </div>
       </div>
 
