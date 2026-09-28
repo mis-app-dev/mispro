@@ -192,9 +192,18 @@ const StudentList = () => {
         const currentSY = getCurrentSchoolYearStr();
         const foundSY = schoolYears.find((sy) => sy.year === currentSY);
 
+        // if (foundSY) {
+        //   handleFilterChange("school_year_id", [foundSY.school_year_id]);
+        // }
+
+        //ubah agar tidak otomatis balik ke page 1, jika punya banyak page
         if (foundSY) {
-          handleFilterChange("school_year_id", [foundSY.school_year_id]);
+          setFilters((prev) => ({
+            ...prev,
+            school_year_id: [foundSY.school_year_id],
+          }));
         }
+        
       } catch (err) {
         console.error("Error fetching registration options:", err);
       } finally {
@@ -212,7 +221,7 @@ const StudentList = () => {
     // FIRST LOAD
     if (!hasFetchedStudents.current) {
       hasFetchedStudents.current = true;
-      fetchStudents(1);
+      fetchStudents(currentPage); //fix bug for restor halaman tiap balik
       return;
     }
 
