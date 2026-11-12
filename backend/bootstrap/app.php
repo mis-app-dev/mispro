@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\RoleMiddleware::class,
             'lifetime' => \App\Http\Middleware\CheckTokenLifetime::class,
             'cors' => \App\Http\Middleware\CorsMiddleware::class,
+            'sync.key' => \App\Http\Middleware\VerifySyncApiKey::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

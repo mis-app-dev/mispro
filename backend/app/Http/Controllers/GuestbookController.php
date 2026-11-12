@@ -79,7 +79,7 @@ class GuestbookController extends Controller
             }
 
             // 📄 PAGINATION
-            $perPage = $request->input('per_page', 25);
+            $perPage = min(max((int) $request->input('per_page', 25), 1), 100);
             $guestbooks = $query->paginate($perPage);
 
             // 🔁 FORMAT DATA
@@ -190,7 +190,8 @@ class GuestbookController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => 'Failed to save guestbook data.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -263,8 +264,8 @@ class GuestbookController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine(),
+                'message' => 'Failed to update guestbook data.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }

@@ -26,4 +26,32 @@ class SchoolYearHelper
 
         return $currentSchoolYear->year; // <-- sekarang return string "YYYY/YYYY"
     }
+
+    /**
+     * The SchoolYear row of the running school year (July to June), or null if it has not
+     * been added yet.
+     */
+    public static function current(): ?SchoolYear
+    {
+        $month = now()->month;
+        $year = now()->year;
+        $name = ($month >= 7) ? $year . '/' . ($year + 1) : ($year - 1) . '/' . $year;
+
+        return SchoolYear::where('year', $name)->first();
+    }
+
+    /**
+     * True when $schoolYearId is a later school year than $current ("2027/2028" after
+     * "2026/2027"). Years are compared by name, which sorts correctly for "YYYY/YYYY".
+     */
+    public static function isAfter(?int $schoolYearId, ?SchoolYear $current): bool
+    {
+        if (!$schoolYearId || !$current) {
+            return false;
+        }
+
+        $year = SchoolYear::where('school_year_id', $schoolYearId)->value('year');
+
+        return $year !== null && strcmp($year, $current->year) > 0;
+    }
 }

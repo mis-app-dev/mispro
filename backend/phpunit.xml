@@ -22,6 +22,9 @@
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="CACHE_STORE" value="array"/>
+        <!-- The database comes from .env. tests/TestCase.php refuses to run unless its name
+             ends with _test or _testing (e.g. a local copy named db_mis_test), so the tests
+             can never run against the live database. -->
         <!-- <env name="DB_CONNECTION" value="sqlite"/>
         <env name="DB_DATABASE" value=":memory:"/> -->
         <env name="MAIL_MAILER" value="array"/>

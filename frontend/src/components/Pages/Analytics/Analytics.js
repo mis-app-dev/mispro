@@ -351,6 +351,208 @@ const ActiveStudentsTable = ({ matrixData, syName }) => {
   );
 };
 
+const CITIZENSHIP_LEVELS = ['All', 'ECP', 'Elementary', 'Middle', 'High'];
+const CITIZENSHIP_LEVEL_LABELS = {
+  All: 'All Levels',
+  ECP: 'Early Childhood Program',
+  Elementary: 'Elementary School',
+  Middle: 'Middle School',
+  High: 'High School',
+};
+const CITIZENSHIP_SHORT_LABELS = {
+  ECP: 'ECP',
+  Elementary: 'ES',
+  Middle: 'MS',
+  High: 'HS',
+};
+const COLOR_INDONESIA = '#EE0808';
+const COLOR_NON_INDONESIA = '#5F84FE';
+
+const CitizenshipCard = ({ citizenship, syName }) => {
+  const [level, setLevel] = useState('All');
+
+  if (!citizenship) return null;
+
+  const emptyStats = { total: 0, indonesia: 0, non_indonesia: 0, countries: [] };
+  const stats = citizenship[level] || emptyStats;
+  const pct = (val) =>
+    stats.total > 0 ? Math.round((val / stats.total) * 1000) / 10 : 0;
+
+  const handleLevelClick = (e) => {
+    e.preventDefault();
+    const next =
+      (CITIZENSHIP_LEVELS.indexOf(level) + 1) % CITIZENSHIP_LEVELS.length;
+    setLevel(CITIZENSHIP_LEVELS[next]);
+  };
+
+  const donutData = [
+    { name: 'Indonesian', value: stats.indonesia, color: COLOR_INDONESIA },
+    {
+      name: 'Non-Indonesian',
+      value: stats.non_indonesia,
+      color: COLOR_NON_INDONESIA,
+    },
+  ];
+
+  const levelChartData = ['ECP', 'Elementary', 'Middle', 'High'].map((key) => ({
+    name: CITIZENSHIP_SHORT_LABELS[key],
+    key,
+    indonesia: citizenship[key]?.indonesia || 0,
+    non_indonesia: citizenship[key]?.non_indonesia || 0,
+  }));
+
+  return (
+    <div className={`${styles.sectionCard} ${styles.citizenshipCard}`}>
+      <div className={styles.sectionHeader}>
+        <div>
+          <div className={styles.sectionTitle}>
+            Indonesian vs Non-Indonesian Students
+          </div>
+          <div className={styles.citizenshipSubtitle}>
+            Active students, S.Y {syName}
+          </div>
+        </div>
+        <div
+          className={styles.trendContainer}
+          onClick={handleLevelClick}
+          style={{
+            cursor: 'pointer',
+            color: 'var(--main-accent)',
+            userSelect: 'none',
+          }}
+          title='Click to change level'
+        >
+          {CITIZENSHIP_LEVEL_LABELS[level]}{' '}
+          <FaSync style={{ fontSize: '10px' }} />
+        </div>
+      </div>
+
+      <div className={styles.citizenshipGrid}>
+        <div className={styles.citizenshipSummary}>
+          <div className={styles.citizenshipDonut}>
+            <ResponsiveContainer width='100%' height='100%'>
+              <PieChart>
+                <Pie
+                  data={stats.total > 0 ? donutData : [{ value: 1 }]}
+                  innerRadius={55}
+                  outerRadius={80}
+                  dataKey='value'
+                  stroke='none'
+                  startAngle={90}
+                  endAngle={-270}
+                >
+                  {stats.total > 0 ? (
+                    donutData.map((entry) => (
+                      <Cell key={entry.name} fill={entry.color} />
+                    ))
+                  ) : (
+                    <Cell fill='#f0f0f0' />
+                  )}
+                </Pie>
+                {stats.total > 0 && <Tooltip />}
+              </PieChart>
+            </ResponsiveContainer>
+            <div className={styles.citizenshipDonutCenter}>
+              <div className={styles.citizenshipDonutValue}>
+                {formatNumber(stats.total)}
+              </div>
+              <div className={styles.citizenshipDonutLabel}>Students</div>
+            </div>
+          </div>
+
+          <div className={styles.citizenshipLegend}>
+            {donutData.map((item) => (
+              <div key={item.name} className={styles.citizenshipLegendRow}>
+                <div
+                  className={styles.legendColorBox}
+                  style={{ backgroundColor: item.color }}
+                ></div>
+                <div>
+                  <div className={styles.citizenshipLegendValue}>
+                    {formatNumber(item.value)}{' '}
+                    <span className={styles.citizenshipLegendPct}>
+                      ({pct(item.value)}%)
+                    </span>
+                  </div>
+                  <div className={styles.citizenshipLegendName}>
+                    {item.name}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className={styles.citizenshipColumn}>
+          <div className={styles.citizenshipColumnTitle}>Per Level</div>
+          <div className={styles.citizenshipBarChart}>
+            <ResponsiveContainer width='100%' height='100%'>
+              <BarChart
+                data={levelChartData}
+                layout='vertical'
+                margin={{ top: 0, right: 16, left: 0, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray='3 3' horizontal={false} />
+                <XAxis
+                  type='number'
+                  allowDecimals={false}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: '#7A7A7A' }}
+                />
+                <YAxis
+                  type='category'
+                  dataKey='name'
+                  width={40}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fontWeight: 600 }}
+                />
+                <Tooltip />
+                <Bar
+                  dataKey='indonesia'
+                  name='Indonesian'
+                  stackId='c'
+                  fill={COLOR_INDONESIA}
+                  barSize={18}
+                />
+                <Bar
+                  dataKey='non_indonesia'
+                  name='Non-Indonesian'
+                  stackId='c'
+                  fill={COLOR_NON_INDONESIA}
+                  barSize={18}
+                  radius={[0, 6, 6, 0]}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className={styles.citizenshipColumn}>
+          <div className={styles.citizenshipColumnTitle}>
+            Non-Indonesian by Country
+          </div>
+          {stats.countries.length > 0 ? (
+            <div className={styles.countryList}>
+              {stats.countries.map((c) => (
+                <div key={c.country} className={styles.countryRow}>
+                  <span className={styles.countryName}>{c.country}</span>
+                  <span className={styles.countryCount}>{c.count}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className={styles.countryEmpty}>
+              No non-Indonesian students
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const RegistrationGrowthChart = ({ multiYearData }) => {
   if (!multiYearData || !multiYearData.labels) return null;
 
@@ -626,7 +828,6 @@ const Analytics = () => {
     const modes = ['pre_register', 'daily', 'yearly'];
     const currentIndex = modes.indexOf(regMode);
     const nextIndex = (currentIndex + 1) % modes.length;
-    console.log('Tombol Reg diklik. Mode baru:', modes[nextIndex]);
     setRegMode(modes[nextIndex]);
   };
 
@@ -635,7 +836,6 @@ const Analytics = () => {
     const levels = ['All', 'ECP', 'Elementary', 'Middle', 'High'];
     const currentIndex = levels.indexOf(servedLevel);
     const nextIndex = (currentIndex + 1) % levels.length;
-    console.log('Tombol Served diklik. Level baru:', levels[nextIndex]);
     setServedLevel(levels[nextIndex]);
   };
 
@@ -1002,6 +1202,11 @@ const Analytics = () => {
 
       <ActiveStudentsTable
         matrixData={activeMatrix}
+        syName={data.meta.current_sy}
+      />
+
+      <CitizenshipCard
+        citizenship={data.citizenship}
         syName={data.meta.current_sy}
       />
 

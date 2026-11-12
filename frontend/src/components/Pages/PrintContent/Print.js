@@ -163,11 +163,6 @@ function Print() {
         }
 
         setPreviewData(apiData);
-        console.log(
-          "Data yang diterima dari getRegistrationPreview:",
-          apiData.request_data
-        );
-
         setSectionOptions(optionsResp.sections || []);
         setProgramOptions(optionsResp.programs || []);
         setPickupPointOptions(optionsResp.pickup_points || []);

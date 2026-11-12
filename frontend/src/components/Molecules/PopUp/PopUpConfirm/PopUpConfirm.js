@@ -39,10 +39,11 @@ const PopUpConfirm = React.memo(
           });
           onConfirm();
         } else {
-          alert('Registration failed: '(response.error || 'Unknown error'));
+          alert('Registration failed: ' + (response.message || response.error || 'Unknown error'));
         }
       } catch (error) {
-        const errorMessage = error.response?.data?.error || '';
+        const errorMessage =
+          error.response?.data?.error || error.response?.data?.message || '';
         const errorDetails = error.response?.data?.errors;
         const generalMessage = error.response?.data?.message;
 

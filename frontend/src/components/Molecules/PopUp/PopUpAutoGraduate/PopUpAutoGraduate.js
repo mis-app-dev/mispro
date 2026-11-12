@@ -71,7 +71,6 @@ const AutoGraduatePopup = ({ onClose, onSuccess }) => {
   useEffect(() => {
     const intervalId = setInterval(() => {
       if (!isConfirmOpen && !isSuccessOpen) {
-        console.log("Auto refreshing popup data...");
         fetchData(true);
       }
     }, REFRESH_INTERVAL);
@@ -113,7 +112,7 @@ const AutoGraduatePopup = ({ onClose, onSuccess }) => {
       }
     } catch (error) {
       console.error("Error confirming auto graduate:", error);
-      alert("Failed to process auto graduation.");
+      alert(error.response?.data?.message || "Failed to process auto graduation.");
     } finally {
       setIsUpdating(false);
     }

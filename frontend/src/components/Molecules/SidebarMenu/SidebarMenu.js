@@ -8,6 +8,7 @@ import logbookIcon from '../../../assets/Logbook_icon.svg';
 import registrationIcon from '../../../assets/Registration_icon.svg';
 import usersIcon from '../../../assets/User_icon.svg';
 import analyticsIcon from '../../../assets/analytics.png';
+import sectionIcon from '../../../assets/Homeroom-List_icon.svg';
 
 import './SidebarMenu.css';
 
@@ -18,6 +19,7 @@ const allMenus = [
   { to: '/Registration', icon: registrationIcon, label: 'Registration' },
   { to: '/students', icon: studentIcon, label: 'Student List' },
   { to: '/Logbook', icon: logbookIcon, label: 'Logbook' },
+  { to: '/Section', icon: sectionIcon, label: 'Section' },
   { to: '/Users', icon: usersIcon, label: 'Users' },
 ];
 

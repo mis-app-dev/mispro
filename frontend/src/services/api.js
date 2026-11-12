@@ -247,12 +247,15 @@ export const getLogbook = ({
   search_family_rank = '',
   search_religion = '',
   search_country = '',
+  search_previous_school = '',
   search_father = '',
   search_mother = '',
   grades = [],
   sections = [],
   school_years = [],
   genders = [],
+  citizenships = [],
+  majors = [],
   transportations = [],
   start_date = '',
   end_date = '',
@@ -271,6 +274,8 @@ export const getLogbook = ({
     params.append('search_family_rank', search_family_rank);
   if (search_religion) params.append('search_religion', search_religion);
   if (search_country) params.append('search_country', search_country);
+  if (search_previous_school)
+    params.append('search_previous_school', search_previous_school);
   if (search_father) params.append('search_father', search_father);
   if (search_mother) params.append('search_mother', search_mother);
 
@@ -285,6 +290,12 @@ export const getLogbook = ({
   );
   (Array.isArray(genders) ? genders : []).forEach((v) =>
     params.append('genders[]', v)
+  );
+  (Array.isArray(citizenships) ? citizenships : []).forEach((v) =>
+    params.append('citizenships[]', v)
+  );
+  (Array.isArray(majors) ? majors : []).forEach((v) =>
+    params.append('majors[]', v)
   );
   (Array.isArray(transportations) ? transportations : []).forEach((v) =>
     params.append('transportations[]', v)
@@ -309,12 +320,15 @@ export const getLogbookForExport = ({
   search_family_rank = '',
   search_religion = '',
   search_country = '',
+  search_previous_school = '',
   search_father = '',
   search_mother = '',
   grades = [],
   sections = [],
   school_years = [],
   genders = [],
+  citizenships = [],
+  majors = [],
   transportations = [],
   start_date = '',
   end_date = '',
@@ -329,6 +343,8 @@ export const getLogbookForExport = ({
     params.append('search_family_rank', search_family_rank);
   if (search_religion) params.append('search_religion', search_religion);
   if (search_country) params.append('search_country', search_country);
+  if (search_previous_school)
+    params.append('search_previous_school', search_previous_school);
   if (search_father) params.append('search_father', search_father);
   if (search_mother) params.append('search_mother', search_mother);
 
@@ -343,6 +359,12 @@ export const getLogbookForExport = ({
   );
   (Array.isArray(genders) ? genders : []).forEach((v) =>
     params.append('genders[]', v)
+  );
+  (Array.isArray(citizenships) ? citizenships : []).forEach((v) =>
+    params.append('citizenships[]', v)
+  );
+  (Array.isArray(majors) ? majors : []).forEach((v) =>
+    params.append('majors[]', v)
   );
   (Array.isArray(transportations) ? transportations : []).forEach((v) =>
     params.append('transportations[]', v)

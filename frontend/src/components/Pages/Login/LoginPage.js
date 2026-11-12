@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login, getMe, resetLogin } from "../../../services/api";
 import Button from "../../Atoms/Button/Button";
@@ -43,7 +43,11 @@ const LoginPage = () => {
       navigate("/Home");
     } catch (error) {
       console.error("Login failed:", error);
-      setError("Login failed. Please check your Email/Password.");
+      setError(
+        error.response?.status === 429
+          ? "Too many login attempts. Please wait a minute and try again."
+          : "Login failed. Please check your Email/Password."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -69,10 +73,6 @@ const LoginPage = () => {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    console.log("LoginPage mounted - URL:", window.location.pathname);
-  }, []);
 
   const toggleMode = (e, mode) => {
     e.preventDefault();

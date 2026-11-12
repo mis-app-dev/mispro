@@ -12,7 +12,7 @@ class StudentsSyncController extends Controller
     public function index(Request $request)
     {
         // 1. Tangkap parameter limit & page
-        $limit = (int) $request->input('limit', 100);
+        $limit = min(max((int) $request->input('limit', 100), 1), 500);
         $updatedAfter = $request->input('updated_after'); // Opsional: untuk Incremental Sync
 
         // 2. Query ke Database dengan Eager Loading
@@ -70,7 +70,9 @@ class StudentsSyncController extends Controller
                 'first_name'    => $student->first_name,
                 'middle_name'   => $student->middle_name,
                 'last_name'     => $student->last_name,
-                'photo_uri'     => 'https://sudent_portal.manadoindependent.sch.id/storage/' . $student->photo_path,
+                'photo_uri'     => $student->photo_path
+                    ? 'https://student_portal.manadoindependent.sch.id/storage/' . ltrim($student->photo_path, '/')
+                    : '',
                 'birth_date'    => $birthDateFormatted,
                 'class_id'      => 0,
                 'school_year'   => $schoolYearName,

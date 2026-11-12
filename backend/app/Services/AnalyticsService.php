@@ -374,6 +374,86 @@ class AnalyticsService
         return $activeStudents;
     }
 
+    /**
+     * Indonesian vs non-Indonesian active students of a school year, overall ('All') and per
+     * level. Uses the same population as getActiveStudentsBySection (active, confirmed
+     * registration in that year). Non-Indonesian students are also counted per country;
+     * an empty country is reported as "Unknown".
+     */
+    public function getCitizenshipBreakdown($schoolYearId)
+    {
+        $levels = ['ECP' => 'ecp', 'Elementary' => 'elementary', 'Middle' => 'middle', 'High' => 'high'];
+        $empty = fn () => ['total' => 0, 'indonesia' => 0, 'non_indonesia' => 0, 'countries' => []];
+
+        $result = ['All' => $empty()];
+        foreach ($levels as $label => $keyword) {
+            $result[$label] = $empty();
+        }
+
+        if (!$schoolYearId) {
+            return $result;
+        }
+
+        $rows = DB::table('students')
+            ->join('enrollments', 'students.id', '=', 'enrollments.id')
+            ->join('application_forms', 'enrollments.enrollment_id', '=', 'application_forms.enrollment_id')
+            ->join('sections', 'enrollments.section_id', '=', 'sections.section_id')
+            ->where('students.active', 'YES')
+            ->where('application_forms.status', 'Confirmed')
+            ->where('enrollments.school_year_id', $schoolYearId)
+            ->select('students.id', 'students.citizenship', 'students.country', 'sections.name as section_name')
+            ->distinct()
+            ->get();
+
+        $counted = [];
+
+        foreach ($rows as $row) {
+            $level = null;
+            foreach ($levels as $label => $keyword) {
+                if (stripos($row->section_name, $keyword) !== false) {
+                    $level = $label;
+                    break;
+                }
+            }
+
+            $isForeign = $row->citizenship === 'Non Indonesia';
+            $country = trim((string) $row->country);
+            $country = $country === '' ? 'Unknown' : ucwords(strtolower($country));
+
+            $targets = ['All'];
+            if ($level) {
+                $targets[] = $level;
+            }
+
+            foreach ($targets as $target) {
+                // A student counts once per group, even with more than one enrollment row.
+                if (isset($counted[$target][$row->id])) {
+                    continue;
+                }
+                $counted[$target][$row->id] = true;
+
+                $result[$target]['total']++;
+                if ($isForeign) {
+                    $result[$target]['non_indonesia']++;
+                    $result[$target]['countries'][$country] = ($result[$target]['countries'][$country] ?? 0) + 1;
+                } else {
+                    $result[$target]['indonesia']++;
+                }
+            }
+        }
+
+        foreach ($result as $key => $stats) {
+            arsort($stats['countries']);
+            $list = [];
+            foreach ($stats['countries'] as $name => $count) {
+                $list[] = ['country' => $name, 'count' => $count];
+            }
+            $result[$key]['countries'] = $list;
+        }
+
+        return $result;
+    }
+
     // Registration Trends
     public function getDailyTrend($date)
     {

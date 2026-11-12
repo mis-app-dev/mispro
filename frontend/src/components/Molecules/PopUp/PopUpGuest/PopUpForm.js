@@ -236,7 +236,6 @@ const PopUpForm = ({ onClose, onSubmit, initialData }) => {
 
       onClose();
     } catch (err) {
-      console.log("ERROR FULL:", err.response);
 
       if (err.response?.data?.errors) {
         alert(JSON.stringify(err.response.data.errors, null, 2));

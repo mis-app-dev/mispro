@@ -10,6 +10,7 @@ import infoIcon from "../../../assets/info_icon.svg";
 import ResetFilterButton from "../../Atoms/ResetFilterButton/ResetFilterButton";
 import AutoGraduatePopup from "../../Molecules/PopUp/PopUpAutoGraduate/PopUpAutoGraduate";
 import { getCurrentSchoolYearStr } from "../../../utils/schoolYear";
+import useAuth from "../../../hooks/useAuth";
 
 const ITEMS_PER_PAGE = 25;
 
@@ -113,6 +114,9 @@ const StudentList = () => {
 
   const [isInitialized, setIsInitialized] = useState(false);
   const [showAutoGraduate, setShowAutoGraduate] = useState(false);
+  const { isTeacher } = useAuth();
+  // Teachers cannot graduate students (the API rejects it as well).
+  const canAutoGraduate = !isTeacher();
 
   const [filterOptions, setFilterOptions] = useState({
     sections: [],
@@ -347,17 +351,19 @@ const StudentList = () => {
       </div>
 
       <div>
-        <div className={styles.autoGraduateParent}>
-          <div
-            className={styles.autoGraduate}
-            onClick={() => setShowAutoGraduate(true)}
-            style={{ cursor: "pointer" }}
-          >
-            Auto Graduate
-          </div>
+        {canAutoGraduate && (
+          <div className={styles.autoGraduateParent}>
+            <div
+              className={styles.autoGraduate}
+              onClick={() => setShowAutoGraduate(true)}
+              style={{ cursor: "pointer" }}
+            >
+              Auto Graduate
+            </div>
 
-          <img className={styles.infoIcon} alt="Info" src={infoIcon} />
-        </div>
+            <img className={styles.infoIcon} alt="Info" src={infoIcon} />
+          </div>
+        )}
 
         <div className={styles.tableContainer}>
           <div className={styles.tableHeaderGrid}>
@@ -495,7 +501,7 @@ const StudentList = () => {
         />
       )}
 
-      {showAutoGraduate && (
+      {canAutoGraduate && showAutoGraduate && (
         <AutoGraduatePopup
           onClose={() => setShowAutoGraduate(false)}
           onSuccess={() => fetchStudents(currentPage)}

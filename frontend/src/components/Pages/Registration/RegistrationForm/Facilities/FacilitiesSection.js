@@ -30,7 +30,6 @@ const FacilitiesSection = ({
     
       getRegistrationOptions()
         .then((data) => {
-          console.log("Facilities data received:", data);
           setTransportations(data.transportations || []);
           setPickupPoints(data.pickup_points || []);
           setResidenceHalls(data.residence_halls || []);
@@ -49,7 +48,6 @@ const FacilitiesSection = ({
   useEffect(() => {
     if (prefill && Object.keys(prefill).length > 0) {
       if (isInitialPrefill.current || !hasInitialized.current) {
-        console.log("Initial prefilling FacilitiesSection with:", prefill);
 
         if (prefill.transportation_id)
           setSelectedTransportation(String(prefill.transportation_id));
@@ -74,7 +72,6 @@ const FacilitiesSection = ({
       }
     } else if (Object.keys(prefill).length === 0 && hasInitialized.current) {
   
-      console.log("Resetting FacilitiesSection form");
       setSelectedTransportation("");
       setSelectedPickupPoint("");
       setPickupPointCustom("");

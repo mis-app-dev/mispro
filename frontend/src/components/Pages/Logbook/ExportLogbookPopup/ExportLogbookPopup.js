@@ -47,8 +47,12 @@ const HEADER_KEY_MAP = {
   Photo: "photo_url",
   "Student ID": "student_id",
   "Full Name": "full_name",
+  "First Name": "first_name",
+  "Middle Name": "middle_name",
+  "Last Name": "last_name",
   Grade: "grade",
   Section: "section",
+  Major: "major",
   "School Year": "school_year",
   Gender: "gender",
   "Registration Date": "registration_date",
@@ -58,7 +62,9 @@ const HEADER_KEY_MAP = {
   "Place DOB": "place_dob",
   Age: "age",
   Religion: "religion",
+  Citizenship: "citizenship",
   Country: "country",
+  "Previous School": "previous_school",
   Address: "address",
   Phone: "phone",
   "Father Name": "father_name",
@@ -70,6 +76,9 @@ const HEADER_KEY_MAP = {
   NIK: "nik",
   KITAS: "kitas",
 };
+
+// Name parts a student does not have stay empty instead of showing "-".
+const BLANK_WHEN_EMPTY = new Set(["First Name", "Middle Name", "Last Name"]);
 
 const ExportLogbookPopup = ({
   isOpen,
@@ -153,7 +162,9 @@ const ExportLogbookPopup = ({
             const dataKey = HEADER_KEY_MAP[column];
             const cellData =
               student[dataKey] === null || student[dataKey] === undefined
-                ? "-"
+                ? BLANK_WHEN_EMPTY.has(column)
+                  ? ""
+                  : "-"
                 : String(student[dataKey]);
             row.push(cellData);
           }
@@ -401,7 +412,7 @@ const ExportLogbookPopup = ({
                         }
                         return (
                           <td key={column} className={styles.dataCell}>
-                            {student[dataKey] || "-"}
+                            {student[dataKey] || (BLANK_WHEN_EMPTY.has(column) ? "" : "-")}
                           </td>
                         );
                       })}

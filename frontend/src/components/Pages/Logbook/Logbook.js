@@ -44,8 +44,12 @@ const INITIAL_HEADERS = [
   "Photo",
   "Student ID",
   "Full Name",
+  "First Name",
+  "Middle Name",
+  "Last Name",
   "Grade",
   "Section",
+  "Major",
   "School Year",
   "Gender",
   "Registration Date",
@@ -55,7 +59,9 @@ const INITIAL_HEADERS = [
   "Place DOB",
   "Age",
   "Religion",
+  "Citizenship",
   "Country",
+  "Previous School",
   "Address",
   "Phone",
   "Father Name",
@@ -68,14 +74,21 @@ const INITIAL_HEADERS = [
   "KITAS",
 ];
 
+// Name parts a student does not have stay empty instead of showing "-".
+const BLANK_WHEN_EMPTY = new Set(["First Name", "Middle Name", "Last Name"]);
+
 const REFRESH_INTERVAL = 5000;
 
 const HEADER_KEY_MAP = {
   Photo: "photo_url",
   "Student ID": "student_id",
   "Full Name": "full_name",
+  "First Name": "first_name",
+  "Middle Name": "middle_name",
+  "Last Name": "last_name",
   Grade: "grade",
   Section: "section",
+  Major: "major",
   "School Year": "school_year",
   Gender: "gender",
   "Registration Date": "registration_date",
@@ -85,7 +98,9 @@ const HEADER_KEY_MAP = {
   "Place DOB": "place_dob",
   Age: "age",
   Religion: "religion",
+  Citizenship: "citizenship",
   Country: "country",
+  "Previous School": "previous_school",
   Address: "address",
   Phone: "phone",
   "Father Name": "father_name",
@@ -101,8 +116,12 @@ const HEADER_KEY_MAP = {
 const SORT_CONFIG_MAP = {
   "Student ID": "student_id",
   "Full Name": "full_name",
+  "First Name": "first_name",
+  "Middle Name": "middle_name",
+  "Last Name": "last_name",
   Grade: "grade",
   Section: "section",
+  Major: "major",
   "School Year": "school_year",
   Gender: "gender",
   "Registration Date": "registration_date",
@@ -110,7 +129,9 @@ const SORT_CONFIG_MAP = {
   "Family Rank": "family_rank",
   Age: "age",
   Religion: "religion",
+  Citizenship: "citizenship",
   Country: "country",
+  "Previous School": "previous_school",
   "Father Name": "father_name",
   "Father Occupation": "father_occupation",
   "Mother Name": "mother_name",
@@ -122,6 +143,21 @@ const FILTER_CONFIG_MAP = {
   "Family Rank": { type: "search", apiKeys: ["search_family_rank"] },
   Religion: { type: "search", apiKeys: ["search_religion"] },
   Country: { type: "search", apiKeys: ["search_country"] },
+  "Previous School": { type: "search", apiKeys: ["search_previous_school"] },
+  Major: {
+    type: "checkbox",
+    apiKeys: ["majors"],
+    optionsKey: "majors",
+    valueKey: "major_id",
+    labelKey: "name",
+  },
+  Citizenship: {
+    type: "checkbox",
+    apiKeys: ["citizenships"],
+    optionsKey: "citizenships",
+    valueKey: "id",
+    labelKey: "name",
+  },
   "Father Name": { type: "search", apiKeys: ["search_father"] },
   "Mother Name": { type: "search", apiKeys: ["search_mother"] },
 
@@ -223,9 +259,14 @@ const Logbook = () => {
     sections: [],
     schoolYears: [],
     transportations: [],
+    majors: [],
     genders: [
       { id: "MALE", name: "Male" },
       { id: "FEMALE", name: "Female" },
+    ],
+    citizenships: [
+      { id: "Indonesia", name: "Indonesia" },
+      { id: "Non Indonesia", name: "Non Indonesia" },
     ],
   });
   const [columns, setColumns] = useState(INITIAL_HEADERS);
@@ -249,6 +290,7 @@ const Logbook = () => {
           sections: opts.sections || [],
           schoolYears: opts.school_years || [],
           transportations: opts.transportations || [],
+          majors: opts.majors || [],
         }));
       } catch (err) {
         console.error("Error fetching registration options:", err);
@@ -338,7 +380,6 @@ const Logbook = () => {
   }, [filters, sorts, fetchLogbookData]);
   useEffect(() => {
     const refreshData = () => {
-      console.log("Auto refreshing logbook data (background)...");
       fetchLogbookData(currentPage, { isBackgroundRefresh: true });
     };
 
@@ -562,7 +603,7 @@ const Logbook = () => {
                             key={header}
                             className={isSelected ? styles.selectedCell : ""}
                           >
-                            {item[dataKey] || "-"}
+                            {item[dataKey] || (BLANK_WHEN_EMPTY.has(header) ? "" : "-")}
                           </td>
                         );
                       })}

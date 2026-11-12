@@ -104,7 +104,6 @@ const StudentStatusSection = ({
         student.source
       );
       if (latestData.success && latestData.data) {
-        console.log('Received application data:', latestData.data); 
         onSelectOldStudent(latestData.data);
 
         if (onDataChange) {

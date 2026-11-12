@@ -192,19 +192,16 @@ const RegistrationForm = () => {
   );
 
   const handleSelectOldStudent = (latestData) => {
-    console.log("Received latest data for prefill:", latestData);
 
     if (latestData) {
       if (
         latestData.studentInfo &&
         Object.keys(latestData.studentInfo).length > 0
       ) {
-        console.log("Prefilling studentInfo:", latestData.studentInfo);
         handleSectionDataChange("studentInfo", latestData.studentInfo);
       }
 
       if (latestData.program && Object.keys(latestData.program).length > 0) {
-        console.log("Prefilling program:", latestData.program);
         handleSectionDataChange("program", latestData.program);
       }
 
@@ -212,7 +209,6 @@ const RegistrationForm = () => {
         latestData.facilities &&
         Object.keys(latestData.facilities).length > 0
       ) {
-        console.log("Prefilling facilities:", latestData.facilities);
         handleSectionDataChange("facilities", latestData.facilities);
       }
 
@@ -220,7 +216,6 @@ const RegistrationForm = () => {
         latestData.parentGuardian &&
         Object.keys(latestData.parentGuardian).length > 0
       ) {
-        console.log("Prefilling parentGuardian:", latestData.parentGuardian);
         handleSectionDataChange("parentGuardian", latestData.parentGuardian);
       }
 

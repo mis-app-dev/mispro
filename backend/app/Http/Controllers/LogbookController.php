@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Log;
 class LogbookController extends Controller
 {
     public function index (Request $request) {
+        if ($invalid = $this->invalidLogbookQuery($request)) {
+            return $invalid;
+        }
+
         try {
             $currentMonth = now()->month;
             $currentYear = now()->year;
@@ -90,7 +94,7 @@ class LogbookController extends Controller
                         $q->whereIn('enrollment_id', $latestIds);
                         $q->whereIn('school_year_id', $targetSchoolYearIds);
                         $q->orderBy('semester_id', 'desc'); 
-                        $q->with(['schoolClass', 'section', 'schoolYear', 'transportation']);
+                        $q->with(['schoolClass', 'section', 'schoolYear', 'transportation', 'major']);
                     },
                 ])
                 ->joinSub($latestEnrollmentIdSub, 'e_latest_join', function ($join) {
@@ -131,6 +135,10 @@ class LogbookController extends Controller
             
             if ($country = $request->input('search_country')) {
                 $studentsQuery->where('country', 'like', "%$country%");
+            }
+
+            if ($previousSchool = $request->input('search_previous_school')) {
+                $studentsQuery->where('students.previous_school', 'like', "%$previousSchool%");
             }
 
             if ($father = $request->input('search_father')) {
@@ -175,6 +183,14 @@ class LogbookController extends Controller
                 $studentsQuery->whereIn('gender', (array)$genders);
             }
 
+            if ($citizenships = $request->input('citizenships')) {
+                $studentsQuery->whereIn('students.citizenship', (array)$citizenships);
+            }
+
+            if ($majors = $request->input('majors')) {
+                $studentsQuery->whereIn('e_join.major_id', (array)$majors);
+            }
+
             if ($transportations = $request->input('transportations')) {
                 if (!$joinMap['transportations']) {
                     $studentsQuery->leftJoin('transportations', 'e_join.transport_id', '=', 'transportations.transport_id');
@@ -202,8 +218,12 @@ class LogbookController extends Controller
             $sortable = [
                 'student_id',
                 'full_name',
+                'first_name',
+                'middle_name',
+                'last_name',
                 'grade',
                 'section',
+                'major',
                 'school_year',
                 'gender',
                 'registration_date',
@@ -211,7 +231,9 @@ class LogbookController extends Controller
                 'family_rank',
                 'age',
                 'religion',
+                'citizenship',
                 'country',
+                'previous_school',
                 'father_name',
                 'father_occupation',
                 'mother_name',
@@ -261,6 +283,10 @@ class LogbookController extends Controller
                             $joinMap['school_years'] = true;
                         }
                         $studentsQuery->orderBy('school_years.year', $order);
+                        break;
+
+                    case 'major':
+                        $studentsQuery->orderByRaw("(SELECT majors.name FROM majors WHERE majors.major_id = e_join.major_id) $order");
                         break;
 
                     case 'registration_date':
@@ -367,7 +393,7 @@ class LogbookController extends Controller
             }
 
             // pagination
-            $perPage = $request->input('per_page', 50);
+            $perPage = min(max((int) $request->input('per_page', 50), 1), 100);
             $students = $studentsQuery->paginate($perPage);
 
 
@@ -404,9 +430,13 @@ class LogbookController extends Controller
                     'photo' => $photoPath,
                     'photo_url' => $photoUrl,
                     'student_id' => $student->student_id,
-                    'full_name' => trim("{$student->first_name} {$student->middle_name} {$student->last_name}"),
+                    'full_name' => $this->joinNameParts($student),
+                    'first_name' => $this->namePart($student->first_name),
+                    'middle_name' => $this->namePart($student->middle_name),
+                    'last_name' => $this->namePart($student->last_name),
                     'grade' => $enrollment?->schoolClass?->grade,
                     'section' => $enrollment?->section?->name,
+                    'major' => $enrollment?->major?->name,
                     'school_year' => $enrollment?->schoolYear?->year,
                     'gender' => $student->gender,
                     'registration_date' => $enrollment?->registration_date,
@@ -416,7 +446,9 @@ class LogbookController extends Controller
                     'place_dob' => "{$student->place_of_birth}, {$student->date_of_birth}",
                     'age' => $student->age,
                     'religion' => $student->religion,
+                    'citizenship' => $student->citizenship,
                     'country' => $student->country,
+                    'previous_school' => $student->previous_school,
                     'address' => $address,
                     'phone' => $student->phone_number,
                     'father_name' => $student->father_name,
@@ -458,6 +490,10 @@ class LogbookController extends Controller
     }
 
     public function export (Request $request) {
+        if ($invalid = $this->invalidLogbookQuery($request)) {
+            return $invalid;
+        }
+
         try {
             $currentMonth = now()->month;
             $currentYear = now()->year;
@@ -535,7 +571,7 @@ class LogbookController extends Controller
                         $q->whereIn('enrollment_id', $latestIds);
                         $q->whereIn('school_year_id', $targetSchoolYearIds);
                         $q->orderBy('semester_id', 'desc'); 
-                        $q->with(['schoolClass', 'section', 'schoolYear', 'transportation']);
+                        $q->with(['schoolClass', 'section', 'schoolYear', 'transportation', 'major']);
                     },
                 ])
                 ->joinSub($latestEnrollmentIdSub, 'e_latest_join', function ($join) {
@@ -576,6 +612,10 @@ class LogbookController extends Controller
             
             if ($country = $request->input('search_country')) {
                 $studentsQuery->where('country', 'like', "%$country%");
+            }
+
+            if ($previousSchool = $request->input('search_previous_school')) {
+                $studentsQuery->where('students.previous_school', 'like', "%$previousSchool%");
             }
 
             if ($father = $request->input('search_father')) {
@@ -620,6 +660,14 @@ class LogbookController extends Controller
                 $studentsQuery->whereIn('gender', (array)$genders);
             }
 
+            if ($citizenships = $request->input('citizenships')) {
+                $studentsQuery->whereIn('students.citizenship', (array)$citizenships);
+            }
+
+            if ($majors = $request->input('majors')) {
+                $studentsQuery->whereIn('e_join.major_id', (array)$majors);
+            }
+
             if ($transportations = $request->input('transportations')) {
                 if (!$joinMap['transportations']) {
                     $studentsQuery->leftJoin('transportations', 'e_join.transport_id', '=', 'transportations.transport_id');
@@ -647,8 +695,12 @@ class LogbookController extends Controller
             $sortable = [
                 'student_id',
                 'full_name',
+                'first_name',
+                'middle_name',
+                'last_name',
                 'grade',
                 'section',
+                'major',
                 'school_year',
                 'gender',
                 'registration_date',
@@ -656,7 +708,9 @@ class LogbookController extends Controller
                 'family_rank',
                 'age',
                 'religion',
+                'citizenship',
                 'country',
+                'previous_school',
                 'father_name',
                 'father_occupation',
                 'mother_name',
@@ -706,6 +760,10 @@ class LogbookController extends Controller
                             $joinMap['school_years'] = true;
                         }
                         $studentsQuery->orderBy('school_years.year', $order);
+                        break;
+
+                    case 'major':
+                        $studentsQuery->orderByRaw("(SELECT majors.name FROM majors WHERE majors.major_id = e_join.major_id) $order");
                         break;
 
                     case 'registration_date':
@@ -846,9 +904,13 @@ class LogbookController extends Controller
                     'photo' => $photoPath,
                     'photo_url' => $photoUrl,
                     'student_id' => $student->student_id,
-                    'full_name' => trim("{$student->first_name} {$student->middle_name} {$student->last_name}"),
+                    'full_name' => $this->joinNameParts($student),
+                    'first_name' => $this->namePart($student->first_name),
+                    'middle_name' => $this->namePart($student->middle_name),
+                    'last_name' => $this->namePart($student->last_name),
                     'grade' => $enrollment?->schoolClass?->grade,
                     'section' => $enrollment?->section?->name,
+                    'major' => $enrollment?->major?->name,
                     'school_year' => $enrollment?->schoolYear?->year,
                     'gender' => $student->gender,
                     'registration_date' => $enrollment?->registration_date,
@@ -858,7 +920,9 @@ class LogbookController extends Controller
                     'place_dob' => "{$student->place_of_birth}, {$student->date_of_birth}",
                     'age' => $student->age,
                     'religion' => $student->religion,
+                    'citizenship' => $student->citizenship,
                     'country' => $student->country,
+                    'previous_school' => $student->previous_school,
                     'address' => $address,
                     'phone' => $student->phone_number,
                     'father_name' => $student->father_name,
@@ -889,5 +953,38 @@ class LogbookController extends Controller
                 'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
+    }
+
+    /**
+     * One part of a student's name for display. Missing parts and placeholders typed
+     * into the form ("-", "NULL", "N/A") come back as an empty string, so the table and
+     * the export show an empty cell.
+     */
+    private function namePart($value): string
+    {
+        $value = trim((string) $value);
+
+        return in_array(strtoupper($value), ['-', 'NULL', 'N/A', 'NA', '.'], true) ? '' : $value;
+    }
+
+    /** Full name from the parts that are filled in, separated by single spaces. */
+    private function joinNameParts($student): string
+    {
+        return implode(' ', array_filter([
+            $this->namePart($student->first_name),
+            $this->namePart($student->middle_name),
+            $this->namePart($student->last_name),
+        ], fn ($part) => $part !== ''));
+    }
+
+    /** Same query parameters for the list and the export. */
+    private function invalidLogbookQuery(Request $request)
+    {
+        return $this->invalidListQuery(
+            $request,
+            ['search_name', 'search_family_rank', 'search_religion', 'search_country', 'search_previous_school', 'search_father', 'search_mother'],
+            ['start_date', 'end_date'],
+            true
+        );
     }
 }

@@ -111,7 +111,6 @@ const Registration = () => {
         setCurrentPage(res.data.current_page || 1);
       } catch (err) {
         if (err.name === 'AbortError') {
-          console.log('Previous fetch aborted due to new input');
           return;
         }
         console.error('Error fetching registrations:', err);
@@ -246,7 +245,6 @@ const Registration = () => {
         ...filters,
         search: search || filters.search || undefined,
       };
-      console.log('Auto refreshing registration list (background)...');
       fetchRegistrations(currentFilters, currentPage, sorts, {
         isBackgroundRefresh: true,
       });

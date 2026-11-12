@@ -22,6 +22,10 @@ class UserManagementController extends Controller
 
     public function index(Request $request)
     {
+        if ($invalid = $this->invalidListQuery($request, ['search', 'username', 'full_name', 'email', 'sort_by', 'sort_dir'])) {
+            return $invalid;
+        }
+
         try {
             $query = User::select('user_id', 'username', 'full_name', 'email', 'role');
 
@@ -224,6 +228,11 @@ class UserManagementController extends Controller
                 'message' => 'Validation failed.',
                 'errors' => $e->errors(),
             ], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found.',
+            ], 404);
         } catch (Exception $e) {
             Log::error('User Management Update Error: ' . $e->getMessage(), [
                 'user_id_target' => $user_id,
@@ -280,6 +289,11 @@ class UserManagementController extends Controller
                 'success' => true,
                 'message' => 'User deleted successfully',
             ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found.',
+            ], 404);
         } catch (Exception $e) {
             Log::error('User Management Destroy Error: ' . $e->getMessage(), [
                 'user_id_target' => $user_id,

@@ -32,7 +32,7 @@ class AnalyticsController extends Controller
             $nextSyName = ($startYear + 1) . '/' . ($startYear + 2);
 
             // Cache Key
-            $cacheKey = 'analytics_full_' . $dateKey;
+            $cacheKey = 'analytics_full_v2_' . $dateKey;
 
             if ($request->has('refresh') && $request->refresh == 'true') {
                 Cache::forget($cacheKey);
@@ -65,7 +65,10 @@ class AnalyticsController extends Controller
                 // 6. ACTIVE STUDENTS
                 $activeStudents = $this->analyticsService->getActiveStudentsBySection($currSyId, true);
 
-                // 7. TRENDS 
+                // 6b. CITIZENSHIP (active students, overall and per level)
+                $citizenship = $this->analyticsService->getCitizenshipBreakdown($currSyId);
+
+                // 7. TRENDS
                 $monthlyTrend = $this->analyticsService->getMonthlyTrend($currentYearInt);
                 $multiYearTrend = $this->analyticsService->getMultiYearTrend($startYear);
 
@@ -91,6 +94,7 @@ class AnalyticsController extends Controller
                     'school_year' => $currSyStats,
                     'pre_register' => $preRegStats,
                     'active_students_matrix' => $activeStudents,
+                    'citizenship' => $citizenship,
                     'monthly_trends' => [
                         'labels' => $monthlyTrend['labels'],
                         'current_data' => $monthlyTrend['current_data'],

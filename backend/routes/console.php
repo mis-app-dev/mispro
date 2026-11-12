@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('update:enrollment-status')->dailyAt('01:00');
 Schedule::command('analytics:invalidate-today')->dailyAt('16:00');
+Schedule::command('drafts:prune --apply')->weeklyOn(0, '02:00');

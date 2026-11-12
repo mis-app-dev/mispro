@@ -96,12 +96,9 @@ This creates the default admin account and master data:
 php artisan db:seed
 ```
 
-Default admin credentials (set in `.env`):
-
-| Field | Value |
-|---|---|
-| Email | `admin@mis-mdo.sch.id` |
-| Password | `admin123` |
+The admin account uses `ADMIN_EMAIL` and `ADMIN_PASSWORD` from your `.env`.
+Set `ADMIN_PASSWORD` to your own password (at least 8 characters) **before** seeding —
+there is no default password, and the admin account is skipped if it is empty.
 
 **h. Create the storage symlink**
 
@@ -158,7 +155,7 @@ The app will open at [http://localhost:3000](http://localhost:3000).
 ### 4. Verify the Setup
 
 1. Open [http://localhost:3000](http://localhost:3000)
-2. Log in with `admin@mis-mdo.sch.id` / `admin123`
+2. Log in with the `ADMIN_EMAIL` / `ADMIN_PASSWORD` you set in `backend/.env`
 3. You should land on the admin dashboard
 
 ---

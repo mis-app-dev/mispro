@@ -84,7 +84,6 @@ const Users = () => {
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-      console.log("Auto refreshing user list (background)...");
       fetchUsers({ isBackgroundRefresh: true });
     }, REFRESH_INTERVAL);
     return () => clearInterval(intervalId);

@@ -26,7 +26,6 @@ const FormButtonSection = ({
   };
 
   const handleSubmit = () => {
-    console.log("Data saat Submit:", JSON.stringify(allFormData, null, 2));
 
     const errors = {};
     const emailRegex =
@@ -348,7 +347,6 @@ const FormButtonSection = ({
         residence_payment: true,
       };
     }
-    console.log("Validation Errors:", errors);
 
     const hasErrors = Object.values(errors).some(
       (sectionErrors) => sectionErrors && Object.keys(sectionErrors).length > 0

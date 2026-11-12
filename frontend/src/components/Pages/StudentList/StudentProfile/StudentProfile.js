@@ -1147,7 +1147,6 @@ const StudentProfile = () => {
             } 
           });
 
-          console.log("Mapped Validation Errors:", formattedErrors);
           
           setErrors(formattedErrors); 
           setIsPopupOpen(false); 

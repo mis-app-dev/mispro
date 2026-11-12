@@ -16,8 +16,10 @@ use App\Http\Controllers\RegistrationController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\StudentsSyncController;
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/reset-login', [AuthController::class, 'resetLogin']);
+Route::middleware('throttle:login')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/reset-login', [AuthController::class, 'resetLogin']);
+});
 
 Route::get('/storage-file/{path}', [StorageController::class, 'serveFile'])
     ->where('path', '.*')
@@ -56,8 +58,6 @@ Route::middleware(['auth:sanctum', 'lifetime', 'role:admin,registrar,head_regist
     Route::get('/{id}/latest-application', [StudentController::class, 'getLatestApplication']);
     Route::patch('/{id}/update', [StudentController::class, 'updateStudent']);
     Route::get('/{id}/history-dates', [StudentController::class, 'getStudentHistoryDates']);
-    Route::post('/auto-graduate/preview', [StudentController::class, 'autoGraduatePreview']);
-    Route::post('/auto-graduate/confirm', [StudentController::class, 'autoGraduateConfirm']);
     Route::post('/{id}/card-number', [StudentController::class, 'storeCardNumber']);
   });
 });
@@ -65,6 +65,9 @@ Route::middleware(['auth:sanctum', 'lifetime', 'role:admin,registrar,head_regist
 Route::middleware(['auth:sanctum', 'lifetime', 'role:admin,registrar,head_registrar'])->group(function () {
   Route::prefix('students')->group(function () {
     Route::get('/{id}/history/{versionId}', [StudentController::class, 'getHistoryDetail']);
+    // Graduating students in bulk is not available to teachers.
+    Route::post('/auto-graduate/preview', [StudentController::class, 'autoGraduatePreview']);
+    Route::post('/auto-graduate/confirm', [StudentController::class, 'autoGraduateConfirm']);
   });
 });
 
@@ -95,7 +98,7 @@ Route::middleware(['auth:sanctum', 'lifetime', 'role:admin,registrar,head_regist
     Route::get('/analytics', [AnalyticsController::class, 'index']);
 });
 
-Route::prefix('v1/sync')->group(function () {
+Route::prefix('v1/sync')->middleware(['sync.key', 'throttle:60,1'])->group(function () {
     Route::get('/students', [StudentsSyncController::class, 'index']);
 });
 ?>

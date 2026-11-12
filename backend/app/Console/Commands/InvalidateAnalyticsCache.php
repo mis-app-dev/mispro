@@ -29,7 +29,7 @@ class InvalidateAnalyticsCache extends Command
     public function handle()
     {
         $dateKey = Carbon::now()->format('Y-m-d');
-        $cacheKey = 'analytics_full_' . $dateKey;
+        $cacheKey = 'analytics_full_v2_' . $dateKey;
 
         if (Cache::has($cacheKey)) {
             Cache::forget($cacheKey);

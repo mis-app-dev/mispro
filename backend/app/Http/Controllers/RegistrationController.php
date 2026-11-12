@@ -26,6 +26,10 @@ class RegistrationController extends Controller
 
     public function index(Request $request)
     {
+        if ($invalid = $this->invalidListQuery($request, ['search', 'search_id', 'search_name'], ['start_date', 'end_date'], true)) {
+            return $invalid;
+        }
+
         try {
             $query = Enrollment::query()
                 ->select(
@@ -148,7 +152,7 @@ class RegistrationController extends Controller
             }
             
             // Pagination
-            $data = $query->paginate($request->input('per_page', 25));
+            $data = $query->paginate(min(max((int) $request->input('per_page', 25), 1), 100));
             $totalRegistered = ApplicationForm::count();
     
             return response()->json([
@@ -390,20 +394,48 @@ class RegistrationController extends Controller
             
         } catch (\Exception $e) {
             DB::rollback();
+
+            // Rejections raised on purpose by RegistrationService (duplicate student, wrong
+            // section, ...) are meant for the registrar. Return their message in `message`
+            // and in `error` (the registration popup matches on `error`) whatever APP_DEBUG is.
+            if ($status = $this->clientErrorStatus($e)) {
+                Log::warning('Registration Store Rejected: ' . $e->getMessage(), ['draft_id' => $draft_id]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                    'error'   => $e->getMessage(),
+                ], $status);
+            }
+
             Log::error('Registration Store Error: ' . $e->getMessage(), [
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
                 'trace' => $e->getTraceAsString()
             ]);
 
-            $statusCode = $e->getCode() && is_numeric($e->getCode()) && $e->getCode() >= 400 ? $e->getCode() : 500;
-            
             return response()->json([
-                'success' => false, 
+                'success' => false,
                 'message' => 'Registration failed due to a server error.',
                 'error' => config('app.debug') ? $e->getMessage() : null,
-            ], $statusCode);
+            ], 500);
         }
+    }
+
+    /**
+     * HTTP status for an exception thrown on purpose with a 4xx code, or null for
+     * anything else. Database exceptions carry an SQLSTATE such as "22001" as their
+     * code, which must never be used as an HTTP status.
+     */
+    private function clientErrorStatus(\Throwable $e): ?int
+    {
+        if ($e instanceof \Illuminate\Database\QueryException || $e instanceof \PDOException) {
+            return null;
+        }
+
+        $code = $e->getCode();
+
+        return (is_int($code) && $code >= 400 && $code < 500) ? $code : null;
     }
 
     // Preview
@@ -423,6 +455,11 @@ class RegistrationController extends Controller
                 'data' => $snapshot
             ], 200, [], JSON_PRETTY_PRINT);
 
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration version not found.',
+            ], 404);
         } catch (\Exception $e) {
             Log::error('Preview Failed Error: ' . $e->getMessage(), [
                 'application_id' => $applicationId,
@@ -474,22 +511,32 @@ class RegistrationController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            $statusCode = $e->getCode() && is_numeric($e->getCode()) && $e->getCode() >= 400 ? $e->getCode() : 500;
-            
-            $clientMessage = ($statusCode >= 400 && $statusCode < 500) 
-            ? $e->getMessage() 
-            : 'Failed to cancel registration (Internal Server Error).';
+            $clientStatus = $this->clientErrorStatus($e);
+            $statusCode = $clientStatus ?? 500;
+
+            $clientMessage = $clientStatus
+                ? $e->getMessage()
+                : 'Failed to cancel registration (Internal Server Error).';
 
             return response()->json([
                 'success' => false,
                 'message' => $clientMessage,
-                'error' => config('app.debug') ? $e->getMessage() : null,
+                'error' => $clientStatus || config('app.debug') ? $e->getMessage() : null,
             ], $statusCode);
         }
     }
 
     public function getCancelledRegistrations(Request $request)
     {
+        $invalid = $this->invalidListQuery(
+            $request,
+            ['search', 'filter_name', 'filter_notes', 'sort_by', 'sort_order'],
+            ['reg_start_date', 'reg_end_date', 'cancel_start_date', 'cancel_end_date']
+        );
+        if ($invalid) {
+            return $invalid;
+        }
+
         try {
             $query = CancelledRegistrationView::query();
     
@@ -544,7 +591,7 @@ class RegistrationController extends Controller
     
             // Sort
             $sortField = $request->input('sort_by', 'cancelled_at');
-            $sortOrder = $request->input('sort_order', 'desc');     
+            $sortOrder = strtolower((string) $request->input('sort_order', 'desc')) === 'asc' ? 'asc' : 'desc';
     
             $allowedSorts = ['full_name', 'registration_date', 'cancelled_at', 'school_year', 'section', 'student_status', 'notes'];
     
@@ -554,7 +601,7 @@ class RegistrationController extends Controller
                 $query->orderBy('cancelled_at', 'desc');
             }
             
-            $data = $query->paginate($request->input('per_page', 25));
+            $data = $query->paginate(min(max((int) $request->input('per_page', 25), 1), 100));
     
             return response()->json([
                 'status' => 'success',

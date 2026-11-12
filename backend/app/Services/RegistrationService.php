@@ -27,6 +27,7 @@ use App\Models\ApplicationForm;
 use App\Models\StudentGuardian;
 use Illuminate\Support\Facades\DB;
 use App\Services\AuditTrailService;
+use App\Helpers\SchoolYearHelper;
 use Illuminate\Support\Facades\Log;
 use App\Events\StudentStatusUpdated;
 use App\Models\CancelledRegistration;
@@ -75,8 +76,10 @@ class RegistrationService
     {
         \Log::info('Registration store called', [
             'draft_id' => $draft_id,
-            'request_data' => $validated,
-            'user_id' => $userId
+            'user_id' => $userId,
+            'source' => $source,
+            'student_status' => $validated['student_status'] ?? null,
+            'student_id' => $validated['student_id'] ?? null,
         ]);
 
         DB::beginTransaction();
@@ -311,6 +314,10 @@ class RegistrationService
                     $oldStudent = StudentOld::find($existingStudentId);
                     if (!$oldStudent) {
                         throw new Exception('Old student data not found', 404);
+                    }
+
+                    if ($oldStudent->studentold_id && Student::where('student_id', $oldStudent->studentold_id)->exists()) {
+                        throw new Exception('This student already has a record in the current database. Please select the student from the current student list instead of the old database.', 422);
                     }
 
                     $generatedId = $this->generateStudentId(
@@ -675,7 +682,8 @@ class RegistrationService
             ]
         );
         
-        $student->studentParent()->updateOrCreate(
+        // Keep the parent row of THIS enrollment: the parent addresses must be attached to it.
+        $studentParent = $student->studentParent()->updateOrCreate(
             [
                 'id' => $student->id,
                 'enrollment_id' => $enrollment->enrollment_id, 
@@ -694,15 +702,18 @@ class RegistrationService
             ]
         );
         
-        $this->updateParentAddresses($student, $validated, $enrollment);
+        $this->updateParentAddresses($studentParent, $validated, $enrollment);
         $this->updateGuardianData($student, $validated, $enrollment);
         $this->updatePayment($student, $validated, $enrollment);
     }
 
-    protected function updateParentAddresses($student, $validated, $enrollment)
+    /**
+     * @param StudentParent $studentParent the parent row of $enrollment. Do not use
+     *        $student->studentParent here: that relation returns the student's first parent
+     *        row, which belongs to an earlier enrollment on a re-registration.
+     */
+    protected function updateParentAddresses($studentParent, $validated, $enrollment)
     {
-        $studentParent = $student->studentParent;
-        
         if ($studentParent) {
             $studentParent->fatherAddress()->updateOrCreate(
                 [
@@ -849,7 +860,13 @@ class RegistrationService
         ]);
 
         unset($newRequestData['photo']);
-        
+
+        // The form sends an empty country for Indonesian students; the students table
+        // already stores Indonesia, so the snapshot (shown on the profile) should too.
+        if (($newRequestData['citizenship'] ?? null) === 'Indonesia' && trim((string) ($newRequestData['country'] ?? '')) === '') {
+            $newRequestData['country'] = 'Indonesia';
+        }
+
         if ($student->photo_path) {
             $newRequestData['photo_path'] = $student->photo_path;
             $newRequestData['photo_url']  = asset('storage/' . $student->photo_path);
@@ -1152,8 +1169,44 @@ class RegistrationService
             return 'Registration and related data deleted successfully (Cancellation of Enrollment - NEW/TRANSFEREE).';
 
         } else if ($studentStatus === 'old') {
-            
-            if ($isLatest) { 
+
+            // Cancelling only next year's re-registration: the student keeps attending the
+            // current school year and is set to Withdraw when the next one starts (see the
+            // update:enrollment-status command).
+            if ($isLatest && $this->staysForCurrentYear($student, $enrollment)) {
+                $applicationForm->notes = $notes;
+                $applicationForm->status = 'Cancelled';
+                $applicationForm->save();
+
+                $enrollment->status = 'INACTIVE';
+                $enrollment->save();
+
+                $currentYear = SchoolYearHelper::current()?->year;
+                $nextYear = $enrollment->schoolYear?->year;
+
+                $this->auditTrail->log('Cancel Enrollment', [
+                    'category'          => 'Cancellation (Old Student - Next Year Only)',
+                    'application_id'    => $applicationForm->application_id,
+                    'student_name'      => "{$student->first_name} {$student->middle_name} {$student->last_name}",
+                    'student_id'        => $student->student_id,
+                    'enrollment_ver'    => $current_version,
+                    'reason'            => $cancellationReason,
+                    'notes'             => $notes,
+                    'action_detail'     => "Registration for {$nextYear} cancelled. Student stays active for {$currentYear} and is set to Withdraw when {$nextYear} starts.",
+                    'data_changes'      => [
+                        'application_status' => 'Cancelled',
+                        'enrollment'         => 'INACTIVE',
+                    ]
+                ]);
+
+                DB::commit();
+
+                ApplicationFormStatusUpdated::dispatch($applicationForm, $oldStatus, 'Cancelled (next year only)');
+
+                return "Registration for {$nextYear} cancelled. The student stays active for {$currentYear} and will be set to Withdraw when {$nextYear} starts.";
+            }
+
+            if ($isLatest) {
             $applicationForm->notes = $notes;
             $applicationForm->status = 'Cancelled';
             $applicationForm->save();
@@ -1197,6 +1250,25 @@ class RegistrationService
             throw new Exception('OLD student registration could not be cancelled (Old, not latest enrollment version).', 400);
         }
         throw new Exception('Invalid student status for cancellation.', 400);
+    }
+
+    /**
+     * True when $enrollment belongs to a later school year than the current one and the
+     * student still has a confirmed enrollment in the current school year.
+     */
+    private function staysForCurrentYear($student, $enrollment): bool
+    {
+        $current = SchoolYearHelper::current();
+
+        if (!$current || !SchoolYearHelper::isAfter($enrollment->school_year_id, $current)) {
+            return false;
+        }
+
+        return strtolower((string) $student->status) === 'not graduate'
+            && Enrollment::where('id', $student->id)
+                ->where('school_year_id', $current->school_year_id)
+                ->whereHas('applicationForm', fn ($q) => $q->where('status', 'Confirmed'))
+                ->exists();
     }
 
     private function saveToCancelledRegistration($student, $enrollment, $reason, $notes)

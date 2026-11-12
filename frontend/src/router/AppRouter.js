@@ -15,6 +15,7 @@ import StudentProfile from '../components/Pages/StudentList/StudentProfile/Stude
 import Logbook from '../components/Pages/Logbook/Logbook.js';
 import Guestbook from '../components/Pages/Guestbook/Guestbook.js';
 import Users from '../components/Pages/Users/Users.js';
+import Section from '../components/Pages/Section/Section.js';
 
 import ProtectedRoute from './ProtectedRoute';
 
@@ -130,6 +131,18 @@ const appRoutes = [
         <MainLayout>
           <RegistrarAccess>
             <CanceledRegistration />
+          </RegistrarAccess>
+        </MainLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/Section',
+    element: (
+      <ProtectedRoute>
+        <MainLayout>
+          <RegistrarAccess>
+            <Section />
           </RegistrarAccess>
         </MainLayout>
       </ProtectedRoute>

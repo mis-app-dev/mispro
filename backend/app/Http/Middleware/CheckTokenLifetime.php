@@ -17,7 +17,7 @@ class CheckTokenLifetime
 
             $createdAt = $token->created_at;
 
-            if ($createdAt && now()->diffInMinutes($createdAt) >= $lifetimeMinutes) {
+            if ($createdAt && $createdAt->diffInMinutes(now()) >= $lifetimeMinutes) {
                 $token->delete();
                 Auth::guard('sanctum')->forget($request->user()); 
 
